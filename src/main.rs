@@ -1,4 +1,5 @@
 const SOFTWARE_NAME: &str = "StunServ";
+const FAIL_REPLIES: bool = true;
 
 extern crate bytecodec;
 extern crate failure;
@@ -13,7 +14,7 @@ use std::net::SocketAddr;
 use std::net::UdpSocket;
 use std::panic::catch_unwind;
 use structopt::StructOpt;
-use stun_codec::rfc5389::attributes::{MappedAddress, Software, XorMappedAddress};
+use stun_codec::rfc5389::attributes::{ErrorCode, MappedAddress, Software, XorMappedAddress};
 use stun_codec::rfc5389::methods::BINDING;
 use stun_codec::rfc5389::Attribute as StunAttribute;
 use stun_codec::MessageClass;
@@ -43,17 +44,32 @@ fn serve(request: StunMessage, addr: SocketAddr) -> Result<StunMessage> {
         "Received not a BINDING request",
     );
 
-    let mut reply = StunMessage::new(
-        MessageClass::SuccessResponse,
-        BINDING,
-        request.transaction_id(),
-    );
+    let mut reply;
+    if !FAIL_REPLIES {
+        reply = StunMessage::new(
+            MessageClass::SuccessResponse,
+            BINDING,
+            request.transaction_id(),
+        );
 
-    reply.add_attribute(StunAttribute::XorMappedAddress(XorMappedAddress::new(addr)));
-    reply.add_attribute(StunAttribute::MappedAddress(MappedAddress::new(addr)));
+        reply.add_attribute(StunAttribute::XorMappedAddress(XorMappedAddress::new(addr)));
+        reply.add_attribute(StunAttribute::MappedAddress(MappedAddress::new(addr)));
+    } else {
+        reply = StunMessage::new(
+            MessageClass::ErrorResponse,
+            BINDING,
+            request.transaction_id(),
+        );
+        reply.add_attribute(StunAttribute::ErrorCode(ErrorCode::new(
+            495,
+            "You are not supposed to use your external address now".to_string(),
+        )?));
+    }
+
     reply.add_attribute(StunAttribute::Software(Software::new(
         SOFTWARE_NAME.to_string(),
     )?));
+
     Ok(reply)
 }
 
