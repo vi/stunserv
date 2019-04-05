@@ -7,3 +7,14 @@ edition = "2018"
 [dependencies]
 stun_codec = "0.1.12"
 bytecodec = "0.4.11"
+structopt = "0.2.15"
+failure = "0.1.5"
+
+[profile.release]
+opt-level = "s"
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+incremental = false
