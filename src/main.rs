@@ -43,7 +43,7 @@ struct Opt {
     settings: Settings,
 }
 
-fn serve(request: StunMessage, addr: SocketAddr, settings: &Settings) -> Result<StunMessage> {
+fn serve(request: StunMessage, mut addr: SocketAddr, settings: &Settings) -> Result<StunMessage> {
     ensure!(
         request.class() == MessageClass::Request,
         "Received a non-request",
@@ -52,6 +52,15 @@ fn serve(request: StunMessage, addr: SocketAddr, settings: &Settings) -> Result<
         request.method() == BINDING,
         "Received not a BINDING request",
     );
+
+    if let SocketAddr::V6(a6) = addr {
+        if let Some(a4) = a6.ip().to_ipv4() {
+            addr = SocketAddr::new(
+                std::net::IpAddr::V4(a4),
+                addr.port(),
+            );
+        }
+    }
 
     let mut reply;
     if !settings.fail_replies {

@@ -19,4 +19,4 @@ OPTIONS:
     -p <listen_port>            [default: 3479]
 ```
 
-Pre-built linux x86_64: https://vi-server.org/pub/stunserv  (`SHA256 (stunserv) = 1403f9dace5f98efd8f4e934f9ada3a720413cccf6ea53066ff5c7454f1ba746`)
+Pre-built linux x86_64: https://vi-server.org/pub/stunserv  (`SHA256 (stunserv) = 4f1506308823025681c75f8c51ed2f5da95969559194351fefa8d9da25f50991`)
