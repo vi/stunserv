@@ -1,5 +1,4 @@
 const SOFTWARE_NAME: &str = "StunServ";
-const FAIL_REPLIES: bool = true;
 
 extern crate bytecodec;
 extern crate failure;
@@ -24,6 +23,13 @@ pub type Result<T> = std::result::Result<T, failure::Error>;
 pub type StunMessage = stun_codec::Message<StunAttribute>;
 
 #[derive(StructOpt)]
+struct Settings {
+    /// Return error replies
+    #[structopt(long = "fail-replies")]
+    fail_replies: bool,
+}
+
+#[derive(StructOpt)]
 struct Opt {
     /// IP to listen for incoming requests
     #[structopt(short = "-l", default_value = "0.0.0.0")]
@@ -32,9 +38,12 @@ struct Opt {
     // UDP port to listen for incoming requests
     #[structopt(short = "-p", default_value = "3479")]
     listen_port: u16,
+
+    #[structopt(flatten)]
+    settings: Settings,
 }
 
-fn serve(request: StunMessage, addr: SocketAddr) -> Result<StunMessage> {
+fn serve(request: StunMessage, addr: SocketAddr, settings: &Settings) -> Result<StunMessage> {
     ensure!(
         request.class() == MessageClass::Request,
         "Received a non-request",
@@ -45,7 +54,7 @@ fn serve(request: StunMessage, addr: SocketAddr) -> Result<StunMessage> {
     );
 
     let mut reply;
-    if !FAIL_REPLIES {
+    if !settings.fail_replies {
         reply = StunMessage::new(
             MessageClass::SuccessResponse,
             BINDING,
@@ -90,7 +99,7 @@ fn main() -> Result<()> {
             let request = rq_decoder.decode_from_bytes(buf)?;
             let request = request.map_err(|_| format_err!("Broken message"))?;
 
-            let reply = serve(request, addr)?;
+            let reply = serve(request, addr, &opt.settings)?;
 
             let reply = rp_encoder.encode_into_bytes(reply)?;
             udp.send_to(&reply[..], addr)?;
